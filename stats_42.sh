@@ -1,6 +1,4 @@
 #!/bin/bash
-UID_42=""
-SECRET=""
 INTRA="bledda"
 
 echo -en "Loading intra information\r"
@@ -15,14 +13,24 @@ LOCATION=$(echo $REQ_RESULT | jq .location)
 PTS=$(echo $REQ_RESULT | jq .correction_point)
 WALLET=$(echo $REQ_RESULT | jq .wallet)
 LEVEL=$(echo $REQ_RESULT | jq .cursus_users[1].level)
-BLACKHOLD=$(echo $REQ_RESULT | jq .cursus_users[1].blackholed_at | cut -d "\"" -f 2)
+BLACKHOLE=$(echo $REQ_RESULT | jq .cursus_users[1].blackholed_at | cut -d "\"" -f 2)
 
-CURRENT_DATE=$(date --iso-8601=seconds)
+if [ "$(uname)" = "Darwin" ]
+then
+	CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
+else
+	CURRENT_DATE=$(date --iso-8601=seconds)
+fi
 
 declare -a CURRENT_PROJECT
 
 diff_date () {
-	echo $(( ($(date -d $1 +%s) - $(date -d $2 +%s)) / 86400 ))
+	if [ "$(uname)" = "Darwin" ]
+	then
+		echo "Fix Mac OS in progress"
+	else
+		echo $(( ($(date -d $1 +%s) - $(date -d $2 +%s)) / 86400 ))
+	fi
 }
 
 i=0
@@ -48,7 +56,7 @@ echo -en "                                                            \r"
 echo "----------- USER INFORMATION -----------"
 
 echo -e "LEVEL \t\t: $LEVEL"
-echo -e "BLACKHOLD \t: $(diff_date $BLACKHOLD $CURRENT_DATE) days"
+echo -e "BLACKHOLE \t: $(diff_date $BLACKHOLE $CURRENT_DATE) days"
 echo -e "WALLET \t\t: $WALLET"
 echo -e "PTS \t\t: $PTS"
 echo -e "LOCATION \t: $LOCATION"
