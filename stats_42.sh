@@ -1,36 +1,43 @@
 #!/bin/bash
 INTRA="bledda"
 
+if [ "$(uname)" = "Darwin" ]
+then
+	echo "Error :"
+	echo "This script not functional on macOS"
+	exit
+fi
+
 echo -en "Loading intra information\r"
 
+echo -en "Loading : Get token access ....\r"
 REQ_RESULT=$(curl --silent -d "grant_type=client_credentials" -d "client_id=$UID_42" -d "client_secret=$SECRET" -X POST https://api.intra.42.fr/oauth/token)
+
+if [ "$(echo $REQ_RESULT | jq .error)" != "null" ]
+then
+	echo -en "Error :              "
+	echo $(echo $REQ_RESULT | jq .error_description | cut -d "\"" -f 2)
+	exit
+fi
 
 TOKEN=$(echo $REQ_RESULT | jq .access_token | cut -d "\"" -f 2)
 
+echo -en "Loading : Get value user ......\r"
 REQ_RESULT=$(curl --silent -H "Authorization: Bearer $TOKEN" "https://api.intra.42.fr/v2/users/$INTRA")
 
+echo -en "Loading : Traitement ..........\r"
 LOCATION=$(echo $REQ_RESULT | jq .location)
 PTS=$(echo $REQ_RESULT | jq .correction_point)
 WALLET=$(echo $REQ_RESULT | jq .wallet)
 LEVEL=$(echo $REQ_RESULT | jq .cursus_users[1].level)
 BLACKHOLE=$(echo $REQ_RESULT | jq .cursus_users[1].blackholed_at | cut -d "\"" -f 2)
 
-if [ "$(uname)" = "Darwin" ]
-then
-	CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
-else
-	CURRENT_DATE=$(date --iso-8601=seconds)
-fi
+CURRENT_DATE=$(date --iso-8601=seconds)
 
 declare -a CURRENT_PROJECT
 
 diff_date () {
-	if [ "$(uname)" = "Darwin" ]
-	then
-		echo "Fix Mac OS in progress"
-	else
-		echo $(( ($(date -d $1 +%s) - $(date -d $2 +%s)) / 86400 ))
-	fi
+	echo $(( ($(date -d $1 +%s) - $(date -d $2 +%s)) / 86400 ))
 }
 
 i=0
@@ -51,9 +58,7 @@ do
 	fi
 done
 
-echo -en "                                                            \r"
-
-echo "----------- USER INFORMATION -----------"
+echo -e "----------- USER INFORMATION -----------"
 
 echo -e "LEVEL \t\t: $LEVEL"
 echo -e "BLACKHOLE \t: $(diff_date $BLACKHOLE $CURRENT_DATE) days"
@@ -78,4 +83,3 @@ do
 		echo -e "----------------------------------------\n"
 	fi
 done
-
